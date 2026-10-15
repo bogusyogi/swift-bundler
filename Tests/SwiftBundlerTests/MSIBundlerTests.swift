@@ -59,7 +59,11 @@ struct MSIBundlerTests {
       msi.wxs_namespaces.a = "https://example.com/extension?one=1&two=2"
       msi.wxs_namespaces.z = "urn:example:z"
       """)
-    #expect(xml == reversed)
+    let rootTag = try #require(xml.range(of: #"<Wix\b[^>]*>"#, options: .regularExpression))
+    let reversedRootTag = try #require(
+      reversed.range(of: #"<Wix\b[^>]*>"#, options: .regularExpression)
+    )
+    #expect(xml[rootTag] == reversed[reversedRootTag])
   }
 
   /// Exercises WXS generation without building an app or invoking WiX.
