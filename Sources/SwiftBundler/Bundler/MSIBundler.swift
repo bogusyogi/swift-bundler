@@ -278,6 +278,7 @@ enum MSIBundler: Bundler {
 
     return WXSFile(
       xmlns: "http://wixtoolset.org/schemas/v4/wxs",
+      namespaces: appConfiguration.msi?.wxsNamespaces ?? [:],
       package: package
     )
   }

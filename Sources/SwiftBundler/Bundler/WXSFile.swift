@@ -8,16 +8,42 @@ extension MSIBundler {
   /// nullable from WiX's point of view.
   struct WXSFile: Encodable, Sendable {
     @Attribute var xmlns: String
+    var namespaces: [String: String]
     @Element var package: Package
 
-    init(xmlns: String, package: MSIBundler.WXSFile.Package) {
+    init(
+      xmlns: String,
+      namespaces: [String: String] = [:],
+      package: MSIBundler.WXSFile.Package
+    ) {
       self._xmlns = Attribute(xmlns)
+      self.namespaces = namespaces
       self._package = Element(package)
     }
 
-    enum CodingKeys: String, CodingKey {
-      case xmlns
-      case package = "Package"
+    struct CodingKeys: OpenCodingKey {
+      static let xmlns = Self("xmlns")
+      static let package = Self("Package")
+
+      let stringValue: String
+      var intValue: Int? { nil }
+
+      init?(intValue: Int) {
+        return nil
+      }
+
+      init(_ stringValue: String) {
+        self.stringValue = stringValue
+      }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(_xmlns, forKey: .xmlns)
+      for (prefix, namespace) in namespaces.sorted(by: { $0.key < $1.key }) {
+        try container.encode(Attribute(namespace), forKey: CodingKeys("xmlns:\(prefix)"))
+      }
+      try container.encode(_package, forKey: .package)
     }
 
     struct Package: Codable, Sendable {

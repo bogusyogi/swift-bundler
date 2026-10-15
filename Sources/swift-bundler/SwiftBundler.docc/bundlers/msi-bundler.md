@@ -96,7 +96,20 @@ msi.wix_extensions = [
 ]
 ```
 
-It's currently not possible to use custom elements from WiX extensions; it's only possible to use properties and files provided by extensions (such as the custom actions DLL from `WixToolset.Util.wixext`). Comment on [issue #210](https://github.com/moreSwift/swift-bundler/issues/210) if you'd like such a feature.
+To use custom elements from an extension, register its XML namespace in `msi.wxs_namespaces`. Each key is a namespace prefix, and its value is the namespace URI. Swift Bundler adds these declarations to the WXS root element, alongside the default WiX namespace.
+
+For example, the Util extension's `CloseApplication` element can close your app during installation:
+
+```toml
+[apps.YourApp]
+msi.wix_extensions = ["WixToolset.Util.wixext/6.0.0"]
+msi.wxs_namespaces.util = "http://wixtoolset.org/schemas/v4/wxs/util"
+msi.wxs_extras = [
+  { tag = "util:CloseApplication", Id = "CloseYourApp", Target = "YourApp.exe", CloseMessage = "yes" },
+]
+```
+
+Use valid XML namespace prefixes without the `xmlns:` part. Prefixes in `msi.wxs_extras` must match the prefixes registered in `msi.wxs_namespaces`; installing an extension with `msi.wix_extensions` does not register its namespace automatically.
 
 ### Default components
 

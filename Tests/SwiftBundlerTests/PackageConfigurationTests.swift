@@ -43,6 +43,43 @@ struct PackageConfigurationTests {
 
   // MARK: - Tests
 
+  @Test func testWXSNamespaceConfiguration() async throws {
+    let contents = """
+      format_version = 2
+
+      [apps.HelloWorld]
+      product = "HelloWorld"
+      identifier = "com.example.HelloWorld"
+      version = "0.1.0"
+      msi.wix_extensions = ["WixToolset.Util.wixext/6.0.0"]
+      msi.wxs_namespaces.Util = "http://wixtoolset.org/schemas/v4/wxs/util"
+      msi.wxs_namespaces.custom-prefix = "urn:example:custom"
+      msi.wxs_extras = [
+        { tag = "Util:CloseApplication", Id = "CloseApp", Target = "HelloWorld.exe" }
+      ]
+      """
+
+    let configuration = try await Self.parseTOMLConfiguration(contents)
+    let namespaces = [
+      "Util": "http://wixtoolset.org/schemas/v4/wxs/util",
+      "custom-prefix": "urn:example:custom",
+    ]
+    #expect(configuration.apps?["HelloWorld"]?.msi?.wxsNamespaces == namespaces)
+
+    let flattened = try ConfigurationFlattener.flatten(
+      configuration,
+      with: ConfigurationFlattener.Context(
+        platform: .windows,
+        bundler: .windowsMSI,
+        architectures: [.x86_64]
+      )
+    )
+    let msi = try #require(flattened.apps["HelloWorld"]?.msi)
+    #expect(msi.wxsNamespaces == namespaces)
+    #expect(msi.wxsExtras.first?.tag == "Util:CloseApplication")
+    #expect(msi.wixExtensions.first?.description == "WixToolset.Util.wixext/6.0.0")
+  }
+
   /// Ensure that we can correctly load a Swift Bundler 1.x configuration file.
   @Test func testSwiftBundlerV1ConfigurationLoading() async throws {
     try await withFixture("Configuration/V1") { fixture in
